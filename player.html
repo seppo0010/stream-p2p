@@ -5,9 +5,13 @@
   <meta charset="utf-8">
   <script>
   const id = location.href.split('/')[4] || 'undefinedLOL'
-  let pc = new RTCPeerConnection({iceServers: [{urls: "stun:stun.stunprotocol.org"}]});
-  pc.ontrack = gotRemoteStream;
-  (async () => {
+  let _ = (async () => {
+    const pc = new RTCPeerConnection({iceServers: [{urls: "stun:stun.stunprotocol.org"}]});
+    pc.ontrack = (event) => {
+      if (document.getElementById('video').srcObject !== event.streams[0]) {
+        document.getElementById('video').srcObject = event.streams[0];
+      }
+    };
     const res = await fetch(`/stream/${id}`, {
       method: 'GET',
       headers:{
@@ -15,43 +19,21 @@
       }
     })
     const data = await res.json();
-    pc.setRemoteDescription(data.offer, onSetRemoteSuccess, onSetSessionDescriptionError);
+    pc.setRemoteDescription(data.offer, () => {}, (error) => alert(error));
     data.candidates.forEach((c) => {
       pc.addIceCandidate(c)
     })
-    pc.createAnswer(onCreateAnswerSuccess, onCreateSessionDescriptionError);
+    pc.createAnswer(async(desc) => {
+      pc.setLocalDescription(desc, () => {}, (error) => alert(error));
+      await fetch(`/stream/${id}/answer`, {
+        method: 'POST',
+        body: JSON.stringify(desc),
+        headers:{
+          'Content-Type': 'application/json'
+        }
+      })
+    }, (error) => alert(error));
   })()
-
-  function onCreateSessionDescriptionError(error) {
-    alert(`Failed to create session description: ${error.toString()}`);
-  }
-
-  function onSetLocalSuccess() {
-  }
-
-  function onSetRemoteSuccess() {
-  }
-
-  function onSetSessionDescriptionError(error) {
-    alert(`Failed to set session description: ${error.toString()}`);
-  }
-
-  function gotRemoteStream(event) {
-    if (document.getElementById('video').srcObject !== event.streams[0]) {
-      document.getElementById('video').srcObject = event.streams[0];
-    }
-  }
-
-  async function onCreateAnswerSuccess(desc) {
-    pc.setLocalDescription(desc, onSetLocalSuccess, onSetSessionDescriptionError);
-    await fetch(`/stream/${id}/answer`, {
-      method: 'POST',
-      body: JSON.stringify(desc),
-      headers:{
-        'Content-Type': 'application/json'
-      }
-    })
-  }
 
   </script>
 </head>
