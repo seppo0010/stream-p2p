@@ -4,10 +4,9 @@
 
   <meta charset="utf-8">
   <script>
-  const offer = {candidates: []};
   const id = location.href.split('/')[4] || btoa(Math.random())
+  let stream;
   history.replaceState(null, '', `/streamer/${id}`)
-  let pc;
   function _startScreenCapture() {
     if (navigator.getDisplayMedia) {
       return navigator.getDisplayMedia({video: true});
@@ -19,10 +18,14 @@
   }
 
   async function broadcast() {
-    const stream = await _startScreenCapture()
+    stream = await _startScreenCapture()
+    createPeerConnection()
+  }
+
+  async function createPeerConnection() {
     const videoTracks = stream.getVideoTracks();
-    const servers = null;
-    pc = new RTCPeerConnection({iceServers: [{urls: "stun:stun.stunprotocol.org"}]});
+    const offer = {candidates: []};
+    const pc = new RTCPeerConnection({iceServers: [{urls: "stun:stun.stunprotocol.org"}]});
     pc.onicegatheringstatechange = async (e) => {
       if (e.target.iceGatheringState === 'complete') {
         if (!offer.offer || !offer.candidates) {
@@ -36,7 +39,13 @@
             'Content-Type': 'application/json'
           }
         })
-        waitForAnswer();
+        const waitForAnswer = async () => {
+          let res = await fetch(`/stream/${id}/answer`)
+          let data = await res.json()
+          pc.setRemoteDescription(data);
+          createPeerConnection()
+        }
+        waitForAnswer()
       }
     }
     pc.onicecandidate = (ic) => {
@@ -45,32 +54,12 @@
       }
     }
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
-    pc.createOffer({}).then(gotDescription1Local, onCreateSessionDescriptionError);
-  }
-
-  async function waitForAnswer() {
-    let res = await fetch(`/stream/${id}/answer`, {
-      method: 'GET',
-    })
-    let data = await res.json()
-    gotDescription1Remote(data)
-  }
-
-  function gotDescription1Remote(desc) {
-    pc.setRemoteDescription(desc);
-  }
-
-  function gotDescription1Local(desc) {
-    pc.setLocalDescription(desc);
-    offer.offer = desc;
-  }
-
-  function onCreateSessionDescriptionError(error) {
-    alert(`Failed to create session description: ${error.toString()}`);
-  }
-
-  function gotRemote() {
-      gotDescription1Remote(JSON.parse(document.getElementById('remote-description').value))
+    pc.createOffer({}).then((desc) => {
+      pc.setLocalDescription(desc);
+      offer.offer = desc;
+    }, (error) => {
+      alert(`Failed to create session description: ${error.toString()}`);
+    });
   }
   </script>
 </head>
