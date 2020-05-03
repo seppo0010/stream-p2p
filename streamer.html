@@ -19,6 +19,7 @@
 
   async function broadcast() {
     stream = await _startScreenCapture()
+    document.getElementById('video').srcObject = stream;
     createPeerConnection()
   }
 
@@ -65,5 +66,6 @@
 </head>
 <body>
   <button onclick="broadcast()">broadcast</button><br>
+  <video id="video" autoplay="true"></video>
 </body>
 </html>
