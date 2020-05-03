@@ -1,0 +1,20 @@
+{
+  "name": "stream-p2p",
+  "version": "1.0.0",
+  "description": "Stream desktop peer to peer",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seppo0010/stream-p2p.git"
+  },
+  "author": "Sebastian Waisbrot",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/seppo0010/stream-p2p/issues"
+  },
+  "homepage": "https://github.com/seppo0010/stream-p2p#readme"
+}
