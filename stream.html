@@ -4,7 +4,10 @@
 
   <meta charset="utf-8">
   <script>
-  var pc1Local;
+  const offer = {candidates: []};
+  const id = location.href.split('/')[4] || Math.random()
+  history.replaceState(null, '', `/stream/${id}`)
+  let pc;
   function _startScreenCapture() {
     if (navigator.getDisplayMedia) {
       return navigator.getDisplayMedia({video: true});
@@ -14,56 +17,57 @@
       return navigator.mediaDevices.getUserMedia({video: {mediaSource: 'screen'}});
     }
   }
-async function broadcast() {
-  const stream = await _startScreenCapture()
-  const videoTracks = stream.getVideoTracks();
-  const servers = null;
-  pc1Local = new RTCPeerConnection({iceServers: [{urls: "stun:stun.stunprotocol.org"}]});
-  pc1Local.onicecandidate = (ic) => {
-      let val = JSON.parse(document.getElementById('ice-candidate-out').value || '[]') 
-          if (ic.candidate) {
-            val.push(ic.candidate)
+
+  async function broadcast() {
+    const stream = await _startScreenCapture()
+    const videoTracks = stream.getVideoTracks();
+    const servers = null;
+    pc = new RTCPeerConnection({iceServers: [{urls: "stun:stun.stunprotocol.org"}]});
+    pc.onicegatheringstatechange = async (e) => {
+      if (e.target.iceGatheringState === 'complete') {
+        if (!offer.sdp || !offer.candidates) {
+          alert('No SDP or no candidates :(')
+          return
+        }
+        const res = await fetch(`/stream/${id}`, {
+          method: 'POST',
+          body: JSON.stringify(offer),
+          headers:{
+            'Content-Type': 'application/json'
           }
-      document.getElementById('ice-candidate-out').value = JSON.stringify(val)
+        })
+        const data = await res.json();
+        console.log(data)
+      }
+    }
+    pc.onicecandidate = (ic) => {
+      if (ic.candidate) {
+        offer.candidates.push(ic.candidate)
+      }
+    }
+    stream.getTracks().forEach(track => pc.addTrack(track, stream));
+    pc.createOffer({}).then(gotDescription1Local, onCreateSessionDescriptionError);
   }
-  stream.getTracks().forEach(track => pc1Local.addTrack(track, stream));
-  pc1Local.createOffer({}).then(gotDescription1Local, onCreateSessionDescriptionError);
-}
 
-function gotDescription1Remote(desc) {
-  pc1Local.setRemoteDescription(desc);
-}
+  function gotDescription1Remote(desc) {
+    pc.setRemoteDescription(desc);
+  }
 
-function gotDescription1Local(desc) {
-  pc1Local.setLocalDescription(desc);
-  document.getElementById('local-description').value = JSON.stringify(desc);
-}
+  function gotDescription1Local(desc) {
+    pc.setLocalDescription(desc);
+    offer.sdp = desc;
+  }
 
-function onCreateSessionDescriptionError(error) {
-  console.log(`Failed to create session description: ${error.toString()}`);
-}
+  function onCreateSessionDescriptionError(error) {
+    alert(`Failed to create session description: ${error.toString()}`);
+  }
 
-function gotRemote() {
-    gotDescription1Remote(JSON.parse(document.getElementById('remote-description').value))
-}
-
-function gotIceCandidate() {
-    JSON.parse(document.getElementById('ice-candidate-in').value).forEach((c) => pc1Local.addIceCandidate(c))
-    
-}
+  function gotRemote() {
+      gotDescription1Remote(JSON.parse(document.getElementById('remote-description').value))
+  }
   </script>
 </head>
 <body>
   <button onclick="broadcast()">broadcast</button><br>
-  Local Description;<br>
-  <textarea id="local-description"></textarea><br>
-  Remote Description;<br>
-  <textarea id="remote-description"></textarea><br>
-  <button onclick="gotRemote()">received remote</button>
-  ICE candidate to send<br>
-  <textarea id="ice-candidate-out"></textarea><br>
-  ICE candidate received<br>
-  <textarea id="ice-candidate-in"></textarea><br>
-  <button onclick="gotIceCandidate()">received remote</button>
 </body>
 </html>
