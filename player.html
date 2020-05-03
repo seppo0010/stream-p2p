@@ -10,6 +10,7 @@
     pc.ontrack = (event) => {
       if (document.getElementById('video').srcObject !== event.streams[0]) {
         document.getElementById('video').srcObject = event.streams[0];
+        document.getElementById('video').play()
       }
     };
     const res = await fetch(`/stream/${id}`, {
