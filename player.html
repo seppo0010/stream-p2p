@@ -6,7 +6,7 @@
   <script>
   const id = location.href.split('/')[4] || 'undefinedLOL'
   let _ = (async () => {
-    const pc = new RTCPeerConnection({iceServers: [{urls: "stun:stun.stunprotocol.org"}]});
+    const pc = new RTCPeerConnection({iceServers: [{urls: "stun:stun.l.google.com:19302"}]});
     pc.ontrack = (event) => {
       if (document.getElementById('video').srcObject !== event.streams[0]) {
         document.getElementById('video').srcObject = event.streams[0];
