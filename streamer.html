@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <script>
   const offer = {candidates: []};
-  const id = location.href.split('/')[4] || Math.random()
-  history.replaceState(null, '', `/stream/${id}`)
+  const id = location.href.split('/')[4] || btoa(Math.random())
+  history.replaceState(null, '', `/streamer/${id}`)
   let pc;
   function _startScreenCapture() {
     if (navigator.getDisplayMedia) {
@@ -25,7 +25,7 @@
     pc = new RTCPeerConnection({iceServers: [{urls: "stun:stun.stunprotocol.org"}]});
     pc.onicegatheringstatechange = async (e) => {
       if (e.target.iceGatheringState === 'complete') {
-        if (!offer.sdp || !offer.candidates) {
+        if (!offer.offer || !offer.candidates) {
           alert('No SDP or no candidates :(')
           return
         }
@@ -36,8 +36,7 @@
             'Content-Type': 'application/json'
           }
         })
-        const data = await res.json();
-        console.log(data)
+        waitForAnswer();
       }
     }
     pc.onicecandidate = (ic) => {
@@ -49,13 +48,21 @@
     pc.createOffer({}).then(gotDescription1Local, onCreateSessionDescriptionError);
   }
 
+  async function waitForAnswer() {
+    let res = await fetch(`/stream/${id}/answer`, {
+      method: 'GET',
+    })
+    let data = await res.json()
+    gotDescription1Remote(data)
+  }
+
   function gotDescription1Remote(desc) {
     pc.setRemoteDescription(desc);
   }
 
   function gotDescription1Local(desc) {
     pc.setLocalDescription(desc);
-    offer.sdp = desc;
+    offer.offer = desc;
   }
 
   function onCreateSessionDescriptionError(error) {
