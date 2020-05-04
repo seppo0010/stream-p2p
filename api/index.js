@@ -1,14 +1,13 @@
 const fs = require('fs');
-const http = require('http');
 const url = require('url');
 
 let waitingStreamers = {};
 let streamerWaitingForAnswer = {}
 const staticFiles = ['picker', 'player', 'streamer'].map((file) => {
-  return [(file === 'picker' ? '' : file), fs.readFileSync(`${file}.html`, 'utf-8')]
+  return [(file === 'picker' ? '' : file), fs.readFileSync(`./${file}.html`, 'utf-8')]
 }).reduce((acc, val) => { acc[val[0]] = val[1]; return acc }, {})
 
-const server = http.createServer((req, res) => {
+module.exports = (req, res) => {
   const u = new url.URL(req.url, `http://${req.headers.host}`);
   const segments = u.pathname.split('/')
   const firstSegment = segments[1]
@@ -54,8 +53,4 @@ const server = http.createServer((req, res) => {
   }
   res.writeHead(404)
   res.end()
-});
-const port = process.env.PORT || 8000;
-server.listen(port, () => {
-  console.log(`server started on port ${port}`)
-});
+};
