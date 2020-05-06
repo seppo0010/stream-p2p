@@ -6,12 +6,12 @@
   <script>
   let dc;
   const id = location.href.split('/')[4] || 'undefinedLOL'
-  let _ = (async () => {
+  let play = (async () => {
     const pc = new RTCPeerConnection({iceServers: [{urls: "stun:stun.l.google.com:19302"}]});
     pc.ontrack = (event) => {
       if (document.getElementById('video').srcObject !== event.streams[0]) {
         document.getElementById('video').srcObject = event.streams[0];
-        document.getElementById('video').play()
+        document.getElementById("video").play()
       }
     };
     const res = await fetch(`/stream/${id}`, {
@@ -27,9 +27,6 @@
     })
     pc.ondatachannel = (ev) => {
       dc = ev.channel
-      // dc.send(JSON.stringify({mouse: {x: -0.1, y: 0.2}}))
-      // dc.send(JSON.stringify({keyboard: {key: 'i', down: 'down', modifier: ['control', 'shift']}}))
-      // dc.send(JSON.stringify({keyboard: {key: 'i', down: 'up', modifier: ['control', 'shift']}}))
     }
     pc.createAnswer(async(desc) => {
       pc.setLocalDescription(desc, () => {}, (error) => alert(error));
@@ -48,7 +45,7 @@
         alert('disconnected')
       }
     }
-  })()
+  })
 function takeControl() {
   const elem = document.getElementById("video");
   // Start by going fullscreen with the element.  Current implementations
@@ -117,7 +114,8 @@ document.addEventListener('webkitfullscreenchange', fullscreenChange, false);
   </script>
 </head>
 <body>
+<button onclick="play();">Start</button>
 <button onclick="takeControl();">takeControl</button>
-  <video id="video" autoplay="true"></video>
+  <video id="video"></video>
 </body>
 </html>
