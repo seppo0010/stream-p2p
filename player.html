@@ -4,6 +4,7 @@
 
   <meta charset="utf-8">
   <script>
+  let dc;
   const id = location.href.split('/')[4] || 'undefinedLOL'
   let _ = (async () => {
     const pc = new RTCPeerConnection({iceServers: [{urls: "stun:stun.l.google.com:19302"}]});
@@ -24,6 +25,12 @@
     data.candidates.forEach((c) => {
       pc.addIceCandidate(c)
     })
+    pc.ondatachannel = (ev) => {
+      dc = ev.channel
+      // dc.send(JSON.stringify({mouse: {x: -0.1, y: 0.2}}))
+      // dc.send(JSON.stringify({keyboard: {key: 'i', down: 'down', modifier: ['control', 'shift']}}))
+      // dc.send(JSON.stringify({keyboard: {key: 'i', down: 'up', modifier: ['control', 'shift']}}))
+    }
     pc.createAnswer(async(desc) => {
       pc.setLocalDescription(desc, () => {}, (error) => alert(error));
       await fetch(`/stream/${id}/answer`, {
@@ -34,11 +41,63 @@
         }
       })
     }, (error) => alert(error));
+    pc.oniceconnectionstatechange = (event) => {
+      if (pc.iceConnectionState === "failed" ||
+          pc.iceConnectionState === "disconnected" ||
+          pc.iceConnectionState === "closed") {
+        alert('disconnected')
+      }
+    }
   })()
+function takeControl() {
+  const elem = document.getElementById("video");
+  // Start by going fullscreen with the element.  Current implementations
+  // require the element to be in fullscreen before requesting pointer
+  // lock--something that will likely change in the future.
+  elem.requestFullscreen = elem.requestFullscreen    ||
+                           elem.mozRequestFullscreen ||
+                           elem.mozRequestFullScreen || // Older API upper case 'S'.
+                           elem.webkitRequestFullscreen;
+  elem.requestFullscreen();
+}
+
+document.addEventListener("mousemove", function(e) {
+  var movementX = e.movementX       ||
+                  e.mozMovementX    ||
+                  e.webkitMovementX ||
+                  0,
+      movementY = e.movementY       ||
+                  e.mozMovementY    ||
+                  e.webkitMovementY ||
+                  0;
+
+  if (document.pointerLockElement) {
+    const elem = document.getElementById("video");
+    dc.send(JSON.stringify({mouse: {x: movementX / elem.offsetWidth, y: movementY / elem.offsetHeight}}))
+  }
+}, false);
+
+function fullscreenChange() {
+  const elem = document.getElementById("video");
+  if (document.webkitFullscreenElement === elem ||
+      document.mozFullscreenElement === elem ||
+      document.mozFullScreenElement === elem) { // Older API upper case 'S'.
+    // El elemento esta en pantalla completa, ahora podemos hacer el request de pointer lock
+    elem.requestPointerLock = elem.requestPointerLock    ||
+                              elem.mozRequestPointerLock ||
+                              elem.webkitRequestPointerLock;
+    elem.requestPointerLock();
+  }
+}
+
+document.addEventListener('fullscreenchange', fullscreenChange, false);
+document.addEventListener('mozfullscreenchange', fullscreenChange, false);
+document.addEventListener('webkitfullscreenchange', fullscreenChange, false);
 
   </script>
 </head>
 <body>
+<button onclick="takeControl();">takeControl</button>
   <video id="video" autoplay="true"></video>
 </body>
 </html>
