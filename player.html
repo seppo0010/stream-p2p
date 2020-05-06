@@ -77,6 +77,26 @@ document.addEventListener("mousemove", function(e) {
   }
 }, false);
 
+['down', 'up'].forEach((down) => {
+  document.addEventListener(`mouse${down}`, function(e) {
+    if (document.pointerLockElement) {
+      dc.send(JSON.stringify({mouseClick: {down, button: {
+        0: 'left',
+        1: 'midde',
+        2: 'right',
+      }[e.button]}}))
+    }
+  }, false);
+});
+
+['down', 'up'].forEach((down) => {
+  document.addEventListener(`key${down}`, function(e) {
+    if (document.pointerLockElement) {
+      dc.send(JSON.stringify({keyboard: {down, key: e.key.toLowerCase().replace('arrow', '')}}))
+    }
+  }, false);
+});
+
 function fullscreenChange() {
   const elem = document.getElementById("video");
   if (document.webkitFullscreenElement === elem ||
